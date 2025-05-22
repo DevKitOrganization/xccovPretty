@@ -19,13 +19,20 @@ struct XCCovPrettyCommand : AsyncParsableCommand {
         )
     }
 
+    @Flag(name: .customLong("github-comment"), help: "Output for GitHub PR comments")
+    var gitHubComment = false
 
     mutating func run() throws {
         let projectReport = try projectReport(from: .standardInput)
-        let table = CodeCoverageTable(projectReport: projectReport)
-
-        print(table)
-        print("Overall coverage: \(projectReport.formatted()).")
+        
+        if gitHubComment {
+            let comment = GitHubCodeCoverageComment(projectReport: projectReport)
+            print(comment)
+        } else {
+            let table = CodeCoverageTable(projectReport: projectReport)
+            print(table)
+            print("Overall coverage: \(projectReport.formatted()).")
+        }
     }
 
 
