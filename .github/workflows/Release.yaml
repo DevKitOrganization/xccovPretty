@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.0)'
+        required: true
+        type: string
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Select Xcode 16.4.0
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.0.app
+        
+      - name: Create and Push Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
+          
+      - name: Build Release Binary
+        run: |
+          swift build --configuration release --arch arm64 --arch x86_64
+          
+      - name: Create Release Archive
+        run: |
+          mkdir -p release
+          cp .build/apple/Products/Release/xccovPretty release/
+          tar -czf xccovPretty-macos.tar.gz -C release .
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          files: |
+            xccovPretty-macos.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
